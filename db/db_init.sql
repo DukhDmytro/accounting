@@ -6,3 +6,10 @@ CREATE TABLE IF NOT EXISTS telegram_user(
     username VARCHAR(32),
     language_code VARCHAR(35)
 );
+CREATE TYPE category_type AS ENUM ('expense', 'income');
+CREATE TABLE IF NOT EXISTS category(
+    codename VARCHAR(15) PRIMARY KEY,
+    title VARCHAR(30) UNIQUE NOT NULL,
+    description VARCHAR(50) NOT NULL,
+    type category_type
+);
