@@ -4,7 +4,7 @@ Script for bot running
 from telegram.ext import Updater
 
 from config import settings
-from handlers.handlers import register_handlers
+from handlers import register_handlers, register_admin_handlers
 
 
 def main() -> None:
@@ -13,6 +13,7 @@ def main() -> None:
     """
     updater = Updater(token=settings.API_TOKEN)
     register_handlers(updater.dispatcher)
+    register_admin_handlers(updater.dispatcher)
     updater.start_polling()
 
 

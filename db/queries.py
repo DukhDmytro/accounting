@@ -3,10 +3,11 @@ Working with db related staff
 """
 from typing import Any
 
+import psycopg2
 from psycopg2 import connect
 
 from config.settings import DB_CONNECTION
-from .exceptions import DBError
+from .exceptions import DBError, DBUniqueViolation
 
 
 class WhereInput:
@@ -57,6 +58,8 @@ class DBManager:
         """
         try:
             self.cursor.execute(query, values)
+        except psycopg2.errors.UniqueViolation as error:
+            raise DBUniqueViolation('Value already exists') from error
         except Exception as error:
             raise DBError(str(error)) from error
 
@@ -77,7 +80,7 @@ class DBManager:
                ) -> list[tuple[Any]]:
         """
         Select data from specified table.
-        :param table_name: table_name: table to perform query.
+        :param table_name: table to perform query.
         :param cols: columns to select from table.
         :param filters: data to form WHERE clause.
         :return: list of tuples. Each tuple represent db row.
@@ -87,3 +90,47 @@ class DBManager:
         query = f'SELECT {columns} FROM {table_name} {where}'
         self._execute_or_rollback(query, where.values)
         return self.cursor.fetchall()
+
+    def update(self, table_name: str, data: dict, filters: dict) -> None:
+        """
+        Update data in specified table.
+        :param table_name: table to perform query.
+        :param data: dict with keys - columns to update,
+               values - new values.
+        :param filters: data to form WHERE clause.
+               Key - column name, value - column value.
+        :return: None.
+        """
+        columns = ','.join(f'{key}=%s' for key in data)
+        values = tuple(data.values())
+        where = WhereInput(filters)
+        query = f'UPDATE {table_name} SET {columns} {where}'
+        self._execute_or_rollback(query, values + where.values)
+        self.connection.commit()
+
+    def delete(self, table_name: str, filters: dict) -> None:
+        """
+        Delete data from specified table.
+        :param table_name: table to perform query.
+        :param filters: data to form WHERE clause.
+               Key - column name, value - column value.
+        :return: None.
+        """
+        where = WhereInput(filters)
+        query = f'DELETE FROM {table_name} {where}'
+        self._execute_or_rollback(query, where.values)
+        self.connection.commit()
+
+    def exists(self, table_name: str, filters: dict) -> bool:
+        """
+        Check if row exists in database.
+        :param table_name: table to perform query.
+        :param filters: data to form WHERE clause.
+               Key - column name, value - column value.
+        :return: True if row exists else False.
+        """
+        where = WhereInput(filters)
+        query = f'SELECT EXISTS (SELECT 1 FROM {table_name} {where})'
+        self._execute_or_rollback(query, where.values)
+        self.connection.commit()
+        return all(self.cursor.fetchone())

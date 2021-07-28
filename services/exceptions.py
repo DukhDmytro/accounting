@@ -5,5 +5,11 @@ General exceptions
 
 class UserError(Exception):
     """
-    Exception raise on any error related to user.
+    Exception raised on any error related to user.
+    """
+
+
+class CategoryError(Exception):
+    """
+    Exception raised on any error related to categories
     """

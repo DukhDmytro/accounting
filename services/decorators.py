@@ -18,7 +18,7 @@ def user_required(handler: Callable) -> Callable:
                   *args, **kwargs
                   ):
         try:
-            user = User.get_or_create(update.message)
+            user = User.get_or_create(update.message or update.edited_message)
         except UserError as error:
             return context.bot.send_message(
                 chat_id=update.effective_chat.id, text=str(error)
